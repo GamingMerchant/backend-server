@@ -1,0 +1,5 @@
+PI_API_KEY=your_pi_api_key
+PI_CLIENT_SECRET=your_client_secret
+FRONTEND_URL=https://gamingmerchant.github.io/Gamechanger
+PORT=3000
+SANDBOX_MODE=true
