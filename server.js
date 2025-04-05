@@ -5,11 +5,11 @@ const axios = require('axios');
 const bodyParser = require('body-parser');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000; // Updated to work with Render's default port
 
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL,
+  origin: '*', // Allow all origins for testing
   methods: ['GET', 'POST'],
   credentials: true
 }));
@@ -18,6 +18,11 @@ app.use(bodyParser.json());
 // Basic route for testing
 app.get('/', (req, res) => {
   res.send('Pi Payments Backend Server is running!');
+});
+
+// Simple test endpoint
+app.get('/test', (req, res) => {
+  res.status(200).json({ message: 'Test endpoint is working' });
 });
 
 // Payment approval endpoint
@@ -86,7 +91,7 @@ app.post('/api/payments/complete', async (req, res) => {
   }
 });
 
-// Webhook endpoint for Pi Network callbacks
+// Webhook endpoint for Pi Network callbacks (POST)
 app.post('/api/payments/webhook', (req, res) => {
   const paymentData = req.body;
   console.log('Received webhook from Pi Network:', paymentData);
@@ -97,8 +102,50 @@ app.post('/api/payments/webhook', (req, res) => {
   res.status(200).json({ received: true });
 });
 
+// Added GET handler for webhook testing
+app.get('/api/payments/webhook', (req, res) => {
+  console.log('GET request received on webhook endpoint');
+  res.status(200).json({ 
+    message: 'Webhook endpoint is working (GET)', 
+    note: 'Pi Network will use POST requests to this endpoint, not GET' 
+  });
+});
+
+// Debug endpoint to show all routes
+app.get('/debug/routes', (req, res) => {
+  const routes = [];
+  
+  app._router.stack.forEach(middleware => {
+    if(middleware.route) { // routes registered directly on the app
+      routes.push({
+        path: middleware.route.path,
+        method: Object.keys(middleware.route.methods)[0].toUpperCase()
+      });
+    } else if(middleware.name === 'router') { // router middleware
+      middleware.handle.stack.forEach(handler => {
+        if(handler.route) {
+          routes.push({
+            path: handler.route.path,
+            method: Object.keys(handler.route.methods)[0].toUpperCase()
+          });
+        }
+      });
+    }
+  });
+  
+  res.status(200).json({ routes });
+});
+
 // Start the server
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Sandbox mode: ${process.env.SANDBOX_MODE}`);
+  console.log('Available endpoints:');
+  console.log('- GET /');
+  console.log('- GET /test');
+  console.log('- POST /api/payments/approve');
+  console.log('- POST /api/payments/complete');
+  console.log('- POST /api/payments/webhook');
+  console.log('- GET /api/payments/webhook');
+  console.log('- GET /debug/routes');
 });
